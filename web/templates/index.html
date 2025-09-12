@@ -2494,10 +2494,14 @@
               element.style.color = "#e84393";
             }
           };
-
-          updateApiStatus(ttsStatus, data.services["tts (yating)"]);
+          const ttsServiceKey = Object.keys(data.services).find(key => key.startsWith("tts ("));
+          if (ttsServiceKey) {
+            updateApiStatus(ttsStatus, data.services[ttsServiceKey]);
+          } else {
+            updateApiStatus(ttsStatus, false);
+          }
+          
           const sttServiceKey = Object.keys(data.services).find(key => key.startsWith("stt ("));
-
           if (sttServiceKey) {
             const modelName = sttServiceKey.match(/\((.*?)\)/)[1];
             sttApiTitle.textContent = `STT API (${modelName})`;

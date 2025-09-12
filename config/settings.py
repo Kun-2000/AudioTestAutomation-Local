@@ -13,8 +13,8 @@ except ImportError:
     pass
 
 # 基礎路徑
-BASE_DIR = Path(__file__).parent.parent
-STORAGE_DIR = BASE_DIR / "storage"
+_BASE_DIR = Path(__file__).parent.parent
+STORAGE_DIR = _BASE_DIR / "storage"
 
 # 建立必要目錄
 for folder in ["audio", "reports", "temp"]:
@@ -24,6 +24,8 @@ for folder in ["audio", "reports", "temp"]:
 class Settings:
     """系統設定類別"""
 
+    BASE_DIR: Path = _BASE_DIR
+
     # OpenAI 設定
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     STT_MODEL: str = os.getenv("STT_MODEL", "whisper-1")
@@ -31,10 +33,15 @@ class Settings:
     STT_PROMPT: str = os.getenv("STT_PROMPT", "繁體中文")
 
     # Coqui TTS 設定 (直接整合)
-    COQUI_TTS_SPEAKER_CUSTOMER_WAV: str = os.getenv(
-        "COQUI_TTS_SPEAKER_CUSTOMER_WAV", ""
+    _customer_wav_path = os.getenv("COQUI_TTS_SPEAKER_CUSTOMER_WAV", "")
+    COQUI_TTS_SPEAKER_CUSTOMER_WAV: str = (
+        str(BASE_DIR / _customer_wav_path) if _customer_wav_path else ""
     )
-    COQUI_TTS_SPEAKER_AGENT_WAV: str = os.getenv("COQUI_TTS_SPEAKER_AGENT_WAV", "")
+
+    _agent_wav_path = os.getenv("COQUI_TTS_SPEAKER_AGENT_WAV", "")
+    COQUI_TTS_SPEAKER_AGENT_WAV: str = (
+        str(BASE_DIR / _agent_wav_path) if _agent_wav_path else ""
+    )
 
     # 系統設定
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
