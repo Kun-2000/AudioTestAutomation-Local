@@ -26,10 +26,14 @@ class Settings:
 
     BASE_DIR: Path = _BASE_DIR
 
-    # OpenAI 設定
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    STT_MODEL: str = os.getenv("STT_MODEL", "whisper-1")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o")
+    # 地端 LLM 設定 (Ollama)
+    LLM_API_BASE_URL: str = os.getenv("LLM_API_BASE_URL", "http://localhost:11434/v1")
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "ollama")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "phi4-mini:3.8b")
+
+    # 地端 STT 設定 (faster-whisper)
+    STT_MODEL_SIZE: str = os.getenv("STT_MODEL_SIZE", "base")
+    STT_COMPUTE_TYPE: str = os.getenv("STT_COMPUTE_TYPE", "int8")
     STT_PROMPT: str = os.getenv("STT_PROMPT", "繁體中文")
 
     # Coqui TTS 設定 (直接整合)
@@ -56,12 +60,7 @@ class Settings:
     @classmethod
     def validate_config(cls) -> bool:
         """驗證必要配置"""
-        errors = []
-        if not cls.OPENAI_API_KEY:
-            errors.append("OPENAI_API_KEY 未設定")
 
-        if errors:
-            raise ValueError(f"配置錯誤: {', '.join(errors)}")
         return True
 
 

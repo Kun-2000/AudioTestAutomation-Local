@@ -1,5 +1,3 @@
-requirements.txt
-
 # ===============================
 #  應用程式依賴 (Application Dependencies)
 # ===============================
@@ -10,17 +8,14 @@ uvicorn[standard]==0.24.0
 jinja2==3.1.2
 python-multipart==0.0.6
 
-# API 客戶端
-openai==1.3.7
-httpx==0.25.2
-
 # 音訊處理
 pydub==0.25.1
 
-# --- 新增：本地 TTS 核心依賴 ---
+# --- 本地 STT 核心依賴 ---
+faster-whisper
+
+# --- 本地 TTS 核心依賴 ---
 TTS==0.22.0
-torch
-torchaudio
 transformers<4.37
 
 # 工具

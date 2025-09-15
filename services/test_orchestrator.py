@@ -26,11 +26,11 @@ class TestOrchestrator:
     def __init__(self):
         """初始化測試編排器"""
         try:
-            logger.info("初始化 TTS 服務: Coqui TTS (Direct Integration)")
+            logger.info("初始化 TTS 服務: Coqui TTS")
             self.tts_service = TTSService()
-            logger.info("初始化 STT 服務: %s", settings.STT_MODEL)
+            logger.info("初始化 STT 服務: faster-whisper")
             self.stt_service = STTService()
-            logger.info("初始化 LLM 服務: %s", settings.LLM_MODEL)
+            logger.info("初始化 LLM 服務: Ollama-llama3")
             self.llm_service = LLMService()
             self.cs_mock = CustomerServiceMock()
             self.storage_mock = AudioStorageMock()
@@ -388,12 +388,12 @@ class TestOrchestrator:
             logger.warning("保存測試記錄時發生值錯誤: %s", e)
 
     async def get_service_status(self) -> Dict[str, bool]:
-        """檢查所有服務的狀態"""
+        """檢查所有地端服務的狀態"""
         status = {}
         status["tts (coqui_local)"] = self.tts_service.test_connection()
 
         try:
-            stt_key = f"stt ({settings.STT_MODEL})"
+            stt_key = f"stt ({settings.STT_MODEL_SIZE})"
             status[stt_key] = await self.stt_service.test_connection()
         except Exception as e:
             logger.warning("STT 服務狀態檢查失敗: %s", e)

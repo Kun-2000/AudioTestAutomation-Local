@@ -1,11 +1,12 @@
 """
-STT 服務模組 - 使用 OpenAI STT (非同步版本)
+STT 服務模組 - 使用 faster-whisper (地端版本)
 """
 
 import logging
 from pathlib import Path
 from typing import Tuple
-from openai import AsyncOpenAI, APIError
+import torch
+from faster_whisper import WhisperModel
 
 from config.settings import settings
 
@@ -13,101 +14,83 @@ logger = logging.getLogger(__name__)
 
 
 class STTService:
-    """OpenAI STT 服務"""
+    """faster-whisper 地端 STT 服務"""
 
     def __init__(self):
         """初始化 STT 服務"""
         try:
-            if not settings.OPENAI_API_KEY:
-                raise ValueError("OpenAI API Key 未設定")
+            # 根據硬體自動選擇裝置 (GPU or CPU)
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-            self.model = settings.STT_MODEL
+            # 從設定檔讀取模型大小與計算類型
+            model_size = settings.STT_MODEL_SIZE
+            compute_type = settings.STT_COMPUTE_TYPE
+
+            # 載入 faster-whisper 模型
+            self.model = WhisperModel(
+                model_size,
+                device=self.device,
+                compute_type=compute_type,
+            )
+
             self.prompt = settings.STT_PROMPT
-
-            logger.info("STT 服務 (非同步) 初始化成功")
-
+            logger.info(
+                "STT 服務 (地端 faster-whisper) 初始化成功, 模型: %s, 裝置: %s, 計算類型: %s",
+                model_size,
+                self.device,
+                compute_type,
+            )
         except Exception as e:
             logger.error("STT 服務初始化失敗: %s", e)
             raise
 
     async def transcribe_audio(self, audio_file_path: str) -> Tuple[str, float]:
-        """使用 OpenAI STT 轉錄音檔 (非同步版本)"""
+        """使用 faster-whisper 轉錄音檔，並提供高頻率的進度回饋"""
         try:
             audio_path = Path(audio_file_path)
-
             if not audio_path.exists():
                 raise FileNotFoundError(f"音檔不存在: {audio_file_path}")
 
-            file_size = audio_path.stat().st_size
-            max_size = 25 * 1024 * 1024
+            logger.info("開始地端轉錄音檔: %s", audio_path.name)
 
-            if file_size > max_size:
-                raise ValueError(
-                    f"檔案過大: {file_size / 1024 / 1024:.1f}MB，超過 25MB 限制"
+            # 停用 VAD 濾波器以確保完整轉錄
+            segments, _ = self.model.transcribe(
+                str(audio_path),
+                language="zh",
+                initial_prompt=self.prompt,
+                vad_filter=False,
+            )
+
+            all_text = []
+            print("\n轉錄進度 (處理中，請耐心等候...):")
+
+            segment_count = 0
+            for segment in segments:
+                segment_count += 1
+                print(
+                    f"  已處理完第 {segment_count} 個音訊片段 -> 內容: '{segment.text.strip()}'"
                 )
+                all_text.append(segment.text)
 
-            if file_size < 1024:
-                raise ValueError("檔案過小，可能沒有有效的音檔內容")
-
-            logger.info("開始轉錄音檔: %s (%.1f KB)", audio_path.name, file_size / 1024)
-
-            with open(audio_file_path, "rb") as audio_file:
-                response = await self.client.audio.transcriptions.create(
-                    model=self.model,
-                    file=audio_file,
-                    language="zh",
-                    prompt=self.prompt,
-                    response_format="json",
-                    temperature=0.0,
-                )
-
-            transcript = response.text.strip()
+            transcript = "".join(all_text).strip()
+            print("...轉錄完成！")
 
             if not transcript:
-                raise ValueError("無法識別語音內容，檔案可能損壞或不包含語音")
+                logger.warning("轉錄結果為空，檔案可能不包含有效語音")
+                transcript = ""
 
-            confidence = 1.0
+            confidence = 0.95
 
             logger.info(
                 "轉錄成功: %s%s",
                 transcript[:50],
                 "..." if len(transcript) > 50 else "",
             )
-
             return transcript, confidence
-
-        except APIError as e:
-            logger.error("OpenAI API 錯誤: %s", e)
-            raise RuntimeError(f"語音轉錄失敗: {e}") from e
-        except (FileNotFoundError, ValueError) as e:
-            logger.error("檔案處理錯誤: %s", e)
-            raise
         except Exception as e:
             logger.error("STT 服務錯誤: %s", e)
             raise RuntimeError(f"語音轉錄失敗: {e}") from e
 
     async def test_connection(self) -> bool:
-        """測試 OpenAI STT 連接 (非同步版本)"""
-        try:
-            logger.info("測試 OpenAI %s 連接...", self.model)
-
-            models = await self.client.models.list()
-            available_models = [model.id for model in models.data]
-            model_available = self.model in available_models
-
-            if model_available:
-                logger.info("OpenAI %s 連接測試成功", self.model)
-                return True
-            else:
-                logger.warning("未找到 %s 模型", self.model)
-                return False
-        except APIError as e:
-            logger.error("OpenAI API 錯誤: %s", e)
-            return False
-        except ValueError as e:
-            logger.error("值錯誤: %s", e)
-            return False
-        except (ConnectionError, TimeoutError) as e:
-            logger.error("連接或超時錯誤: %s", e)
-            return False
+        """測試服務是否已成功初始化"""
+        return hasattr(self, "model") and self.model is not None

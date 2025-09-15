@@ -1,5 +1,5 @@
 """
-LLM 服務模組 - 使用 OpenAI GPT 進行對話品質分析 (非同步版本)
+LLM 服務模組 - 使用本地 LLM 服務 (Ollama)
 """
 
 import json
@@ -14,16 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class LLMService:
-    """OpenAI GPT LLM 服務"""
+    """本地 LLM 服務 (相容 OpenAI API)"""
 
     def __init__(self):
         """初始化 LLM 服務"""
         try:
-            if not settings.OPENAI_API_KEY:
-                raise ValueError("OpenAI API Key 未設定")
-            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            self.client = AsyncOpenAI(
+                base_url=settings.LLM_API_BASE_URL,
+                api_key=settings.LLM_API_KEY,
+            )
             self.model = settings.LLM_MODEL
-            logger.info("LLM 服務 (非同步) 初始化成功，使用模型: %s", self.model)
+            logger.info("LLM 服務 (地端) 初始化成功，使用模型: %s", self.model)
         except Exception as e:
             logger.error("LLM 服務初始化失敗: %s", e)
             raise
@@ -31,7 +32,7 @@ class LLMService:
     async def analyze_conversation(
         self, original_script: str, transcribed_text: str
     ) -> Dict[str, Any]:
-        """分析原始腳本與轉錄文字的對話品質 (非同步版本)"""
+        """分析原始腳本與轉錄文字的對話品質"""
         try:
             if not original_script.strip():
                 raise ValueError("原始腳本不能為空")
@@ -47,7 +48,7 @@ class LLMService:
             prompt = self._build_analysis_prompt(
                 normalized_original, normalized_transcribed
             )
-            response = await self._call_gpt_api(prompt)
+            response = await self._call_llm_api(prompt)
             analysis = self._parse_analysis_response(response)
 
             logger.info("分析完成 - 準確率: %.1f%%", analysis.get("accuracy_score", 0))
@@ -60,17 +61,13 @@ class LLMService:
         """文字正規化處理（移除所有標點符號）"""
         if not text:
             return ""
-        # 將多個空白字元壓縮為單一空格
         text = re.sub(r"\s+", " ", text.strip())
-        # 移除「客戶:」和「客服:」等角色標識
         text = re.sub(
             r"^(客戶|客服|customer|agent)\s*[：:]\s*",
             "",
             text,
             flags=re.MULTILINE | re.IGNORECASE,
         )
-        # 使用正規表示式移除所有中英文標點符號
-        # 這會移除所有不是字母、數字、底線或空白字元的字元
         text = re.sub(r"[^\w\s]", "", text)
         return text.strip()
 
@@ -96,8 +93,8 @@ class LLMService:
 
 請只回傳 JSON 格式的分析結果："""
 
-    async def _call_gpt_api(self, prompt: str, retry_count: int = 0) -> str:
-        """呼叫 GPT API (非同步版本)"""
+    async def _call_llm_api(self, prompt: str, retry_count: int = 0) -> str:
+        """呼叫本地 LLM API (相容 OpenAI 格式)"""
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -111,20 +108,20 @@ class LLMService:
                 temperature=0.3,
                 max_tokens=800,
                 top_p=0.9,
-                response_format={"type": "json_object"},  # 確保輸出為 JSON
+                response_format={"type": "json_object"},
             )
             return response.choices[0].message.content.strip()
         except APIError as e:
             if retry_count < 2:
                 logger.warning(
-                    "GPT API 呼叫失敗，重試中 (%d/2): %s", retry_count + 1, e
+                    "LLM API 呼叫失敗，重試中 (%d/2): %s", retry_count + 1, e
                 )
-                return await self._call_gpt_api(prompt, retry_count + 1)
-            logger.error("GPT API 呼叫失敗: %s", e)
-            raise RuntimeError("OpenAI API 錯誤: {e}") from e
+                return await self._call_llm_api(prompt, retry_count + 1)
+            logger.error("LLM API 呼叫失敗: %s", e)
+            raise RuntimeError(f"本地 LLM API 錯誤: {e}") from e
 
     def _parse_analysis_response(self, response_text: str) -> Dict[str, Any]:
-        """解析 GPT 回應"""
+        """解析 LLM 回應"""
         try:
             result = json.loads(response_text.strip())
             default_result = {
@@ -150,9 +147,9 @@ class LLMService:
             }
 
     async def test_connection(self) -> bool:
-        """測試 OpenAI GPT 連接 (非同步版本)"""
+        """測試本地 LLM 連接"""
         try:
-            logger.info("測試 OpenAI GPT (%s) 連接...", self.model)
+            logger.info("測試本地 LLM (%s) 連接...", self.model)
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": "回答'測試成功'"}],
@@ -160,12 +157,6 @@ class LLMService:
             )
             result = response.choices[0].message.content.strip()
             return bool(result)
-        except APIError as e:
-            logger.error("OpenAI API 錯誤: %s", e)
-            return False
-        except ValueError as e:
-            logger.error("值錯誤: %s", e)
-            return False
-        except (ConnectionError, TimeoutError) as e:
-            logger.error("連接或超時錯誤: %s", e)
+        except Exception as e:
+            logger.error("本地 LLM 連接測試失敗: %s", e)
             return False
