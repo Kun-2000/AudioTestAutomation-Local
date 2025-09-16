@@ -1,12 +1,17 @@
 import sys
 import logging
 from pathlib import Path
+import os
 
-from services.tts_service import TTSService
-from models.test_models import TestScript
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
+
+# flake8: noqa: E402
+from services.tts_service import TTSService
+from models.test_models import TestScript
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -33,9 +38,7 @@ def run_tts_test():
         print("\n[步驟 2/3] 準備測試腳本...")
         test_content = (
             "客戶: 你好，我想詢問產品資訊。\n"
-            "客服: 很高興為您服務，請問需要什麼協助？\n"
-            "客戶: 我想了解最新的優惠活動。\n"
-            "客服: 當然，我們目前有多項優惠，請參考我們的官網。"
+            "客服: 很高興為您服務，請問需要什麼協助？"
         )
         script = TestScript(content=test_content)
         print(f"📄 腳本內容:\n{test_content}")

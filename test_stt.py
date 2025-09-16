@@ -2,12 +2,16 @@ import sys
 import logging
 import asyncio
 from pathlib import Path
+import os
 
-from services.stt_service import STTService
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 # 添加專案根目錄到 Python 路徑
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
+
+# flake8: noqa: E402
+from services.stt_service import STTService
 
 # 設定日誌
 logging.basicConfig(
@@ -26,7 +30,7 @@ async def run_stt_test():
     print("=" * 50)
 
     # --- 步驟 1: 設定並檢查音檔路徑 ---
-    audio_file_to_test = "storage/audio/dialogue_coqui_b2033f42.wav"
+    audio_file_to_test = "storage/audio/dialogue_coqui_f7a05567.wav"
 
     test_audio_path = project_root / audio_file_to_test
 

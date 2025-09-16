@@ -4,11 +4,12 @@ import asyncio
 import json
 from pathlib import Path
 
-from services.llm_service import LLMService
-
 # 添加專案根目錄到 Python 路徑
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
+
+# flake8: noqa: E402
+from services.llm_service import LLMService
 
 # 設定日誌
 logging.basicConfig(

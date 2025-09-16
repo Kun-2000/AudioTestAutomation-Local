@@ -2,6 +2,11 @@
 #  應用程式依賴 (Application Dependencies)
 # ===============================
 
+# --- PyTorch 核心依賴 ---
+torch
+torchvision
+torchaudio
+
 # Web 框架與伺服器
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
