@@ -30,7 +30,7 @@ async def run_stt_test():
     print("=" * 50)
 
     # --- 步驟 1: 設定並檢查音檔路徑 ---
-    audio_file_to_test = "storage/audio/dialogue_coqui_f7a05567.wav"
+    audio_file_to_test = "tests/test.mp3"
 
     test_audio_path = project_root / audio_file_to_test
 

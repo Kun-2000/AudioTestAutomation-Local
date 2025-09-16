@@ -23,6 +23,10 @@ faster-whisper
 TTS==0.22.0
 transformers<4.37
 
+# --- 本地 LLM 客戶端 (與 Ollama 相容) ---
+openai==1.35.13
+httpx==0.27.0
+
 # 工具
 python-dotenv==1.0.0
 pydantic==2.5.0

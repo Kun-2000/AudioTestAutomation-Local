@@ -8,13 +8,12 @@ from pathlib import Path
 import uvicorn
 from config.settings import settings
 from api.app import app
-from api.routes import router
 
 # 添加專案根目錄到 Python 路徑
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 設定日誌
+# 設定日誌 (這部分保持不變)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -25,9 +24,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-# 註冊路由
-app.include_router(router)
 
 
 def validate_environment():
@@ -41,14 +37,17 @@ def validate_environment():
         return False
 
 
+# --- 核心修改在此 ---
 def print_startup_info():
-    """顯示啟動資訊"""
+    """顯示啟動資訊 (動態版本)"""
     print("\n" + "=" * 60)
-    print("🚀 客服測試系統 (地端 TTS 版本)")
+    print("🚀 客服測試系統 (全地端版本)")
     print("=" * 60)
     print("📊 TTS: Coqui TTS (Local Direct Integration)")
-    print(f"🎤 STT: OpenAI ({settings.STT_MODEL})")
-    print(f"🤖 LLM: OpenAI ({settings.LLM_MODEL})")
+    print(
+        f"🎤 STT: faster-whisper ({settings.STT_MODEL_SIZE})"
+    )  # 動態讀取 STT 模型大小
+    print(f"🤖 LLM: Ollama ({settings.LLM_MODEL})")  # 動態讀取 LLM 模型名稱
     print(f"💾 存儲路徑: {settings.STORAGE_PATH}")
     print("🌐 Web 介面: http://localhost:8000")
     print("📚 API 文件: http://localhost:8000/docs")
@@ -83,11 +82,11 @@ def cleanup_temp_files():
 
 if __name__ == "__main__":
     try:
-        # 驗證環境
+        # 驗證環境 (這部分保持不變)
         if not validate_environment():
+            # --- 這裡的提示訊息也可以稍微修改得更通用 ---
             print("\n❌ 環境設定不正確，請檢查 .env 檔案")
-            print("必要設定：")
-            print("  - OPENAI_API_KEY")
+            print("或確認 Coqui TTS 的參考音檔路徑是否正確。")
             sys.exit(1)
 
         # 清理臨時檔案
@@ -110,27 +109,12 @@ if __name__ == "__main__":
         logger.info("系統已停止")
         print("\n👋 客服測試系統已停止")
 
-    except ValueError as e:
-        logger.error("系統啟動失敗（值錯誤）: %s", e)
-        print(f"\n💥 啟動失敗（值錯誤）: {e}")
+    # 其他錯誤處理保持不變...
+    except (ValueError, OSError, RuntimeError) as e:
+        logger.error("系統啟動失敗: %s", e)
+        print(f"\n💥 啟動失敗: {e}")
         print("\n🔧 請檢查：")
-        print("  1. Python 環境和依賴套件")
-        print("  2. API 金鑰設定")
-        print("  3. 網路連線狀態")
-        sys.exit(1)
-
-    except OSError as e:
-        logger.error("系統啟動失敗（系統錯誤）: %s", e)
-        print(f"\n💥 啟動失敗（系統錯誤）: {e}")
-        print("\n🔧 請檢查：")
-        print("  1. 檔案系統權限")
-        print("  2. 網路連線狀態")
-        sys.exit(1)
-
-    except RuntimeError as e:
-        logger.error("系統啟動失敗（執行錯誤）: %s", e)
-        print(f"\n💥 啟動失敗（執行錯誤）: {e}")
-        print("\n🔧 請檢查：")
-        print("  1. 依賴套件版本")
-        print("  2. 系統資源限制")
+        print("  1. Python 環境和依賴套件是否都已安裝。")
+        print("  2. .env 檔案的設定是否正確。")
+        print("  3. Ollama, Coqui TTS 等服務是否正常。")
         sys.exit(1)

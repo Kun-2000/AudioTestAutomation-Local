@@ -29,11 +29,11 @@ class Settings:
     # 地端 LLM 設定 (Ollama)
     LLM_API_BASE_URL: str = os.getenv("LLM_API_BASE_URL", "http://localhost:11434/v1")
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "ollama")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "phi4-mini:3.8b")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3.2:latest")
 
     # 地端 STT 設定 (faster-whisper)
-    STT_MODEL_SIZE: str = os.getenv("STT_MODEL_SIZE", "base")
-    STT_COMPUTE_TYPE: str = os.getenv("STT_COMPUTE_TYPE", "int8")
+    STT_MODEL_SIZE: str = os.getenv("STT_MODEL_SIZE", "small")
+    STT_COMPUTE_TYPE: str = os.getenv("STT_COMPUTE_TYPE", "float32")
     STT_PROMPT: str = os.getenv("STT_PROMPT", "繁體中文")
 
     # Coqui TTS 設定 (直接整合)
